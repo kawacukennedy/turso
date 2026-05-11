@@ -1755,7 +1755,7 @@ pub enum PragmaBody {
     /// `=`
     Equals(PragmaValue),
     /// function call
-    Call(PragmaValue),
+    Call(Vec<PragmaValue>),
 }
 
 /// `PRAGMA` value
@@ -1871,6 +1871,8 @@ pub enum PragmaName {
     /// last GC pass) at which MVCC runs an inline, non-blocking garbage
     /// collection pass on the commit path. -1 disables inline GC.
     MvccGcThreshold,
+    /// Stores connection-local metadata for portable MVCC logical-log records.
+    MvccLogMeta,
     /// List all available types (built-in and custom)
     ListTypes,
     /// Deprecated no-op: control whether callback is invoked for empty result sets

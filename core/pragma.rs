@@ -182,6 +182,7 @@ pub fn pragma_for(pragma: &PragmaName) -> Pragma {
             PragmaFlags::NoColumns1 | PragmaFlags::Result0,
             &["mvcc_gc_threshold"],
         ),
+        PragmaName::MvccLogMeta => Pragma::new(PragmaFlags::Result0, &["mvcc_log_meta"]),
         ForeignKeys => Pragma::new(
             PragmaFlags::NoColumns1 | PragmaFlags::Result0,
             &["foreign_keys"],
