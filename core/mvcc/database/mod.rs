@@ -613,6 +613,35 @@ fn table_name_for_rootpage(connection: &Connection, rootpage: i64) -> Option<Str
 }
 
 #[cfg(feature = "conn_raw_api")]
+fn table_name_for_rootpage_in_mvcc_schema<Clock: LogicalClock, A: ConcurrentAllocator>(
+    mvcc_store: &MvStore<Clock, A>,
+    rootpage: i64,
+) -> Option<String> {
+    if rootpage == 0 {
+        return None;
+    }
+    let alternate_rootpage = -rootpage;
+    for entry in mvcc_store.rows.iter() {
+        if entry.key().table_id != SQLITE_SCHEMA_MVCC_TABLE_ID {
+            continue;
+        }
+        let row_versions = entry.value().read();
+        for row_version in row_versions.iter().rev() {
+            if row_version.end.is_some() {
+                continue;
+            }
+            let Ok(row) = portable_schema_row_from_record(row_version.row.payload()) else {
+                continue;
+            };
+            if row.rootpage == rootpage || row.rootpage == alternate_rootpage {
+                return Some(row.name);
+            }
+        }
+    }
+    None
+}
+
+#[cfg(feature = "conn_raw_api")]
 fn portable_table_name_for_mv_table_id<Clock: LogicalClock, A: ConcurrentAllocator>(
     connection: &Connection,
     mvcc_store: &MvStore<Clock, A>,
@@ -620,6 +649,7 @@ fn portable_table_name_for_mv_table_id<Clock: LogicalClock, A: ConcurrentAllocat
 ) -> Option<String> {
     let rootpage = rootpage_for_mv_table_id(mvcc_store, table_id);
     table_name_for_rootpage(connection, rootpage)
+        .or_else(|| table_name_for_rootpage_in_mvcc_schema(mvcc_store, rootpage))
 }
 
 #[cfg(feature = "conn_raw_api")]
@@ -2449,7 +2479,9 @@ impl<Clock: LogicalClock, A: ConcurrentAllocator> CommitStateMachine<Clock, A> {
 
             if !needed_rootpages.is_empty() {
                 for rootpage in needed_rootpages {
-                    let Some(name) = table_name_for_rootpage(&self.connection, rootpage) else {
+                    let Some(name) = table_name_for_rootpage(&self.connection, rootpage)
+                        .or_else(|| table_name_for_rootpage_in_mvcc_schema(mvcc_store, rootpage))
+                    else {
                         continue;
                     };
                     let resolved_rootpage = if rootpage < 0 { -rootpage } else { rootpage };
