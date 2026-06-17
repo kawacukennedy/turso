@@ -1872,7 +1872,7 @@ pub enum PragmaName {
     /// collection pass on the commit path. -1 disables inline GC.
     MvccGcThreshold,
     /// Stores connection-local metadata for portable MVCC logical-log records.
-    MvccLogMeta,
+    MvccLogMetaConn,
     /// List all available types (built-in and custom)
     ListTypes,
     /// Deprecated no-op: control whether callback is invoked for empty result sets
