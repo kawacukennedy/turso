@@ -1,0 +1,93 @@
+[verdict]
+type = "verified"
+method = "neural"
+produced_at_text_hash = "sha256:c52bf25b41ba56279e7c1c7066ae6318ff82a99c1af858ec82c269dec6882d12"
+produced_at_body_hash = "sha256:b00775bc779b3fcf3713676b6675ea5c354d64b207daa71437d77a884b3ff35f"
+produced_by = "aristo-neural-verifier@v0.0.7"
+attempts = 3
+property_kind = "invariant"
+
+[verified.proof]
+conclusion = "Restarting the WAL rotates the salts and bumps the checkpoint sequence, and because frame validity is decided by salt equality against the current header, frames written under the previous epoch can never be mistaken for valid frames once the log file is reused."
+
+[[verified.proof.steps]]
+path = "0"
+claim = "A log restart changes the salts/checkpoint_seq, post-restart frames are written under the new salts, and frame validation rejects any frame whose salts disagree with the current header; together these prevent a previous-epoch frame from being accepted after the log is reused."
+relation_to_parent = "decomposes"
+subgoal_paths = [
+    "0.0",
+    "0.1",
+    "0.2",
+]
+
+[[verified.proof.steps.grounds]]
+kind = "composition"
+reason = "Subgoals 0.0 (salts rotated on restart), 0.1 (new frames carry the new salts only after a durable new header), and 0.2 (validation rejects salt-mismatched frames) combine via AND to establish the focal invariant."
+
+[[verified.proof.steps]]
+path = "0.0"
+claim = "restart_snapshot_from_authority deterministically increments checkpoint_seq and salt_1, draws a fresh random salt_2, resets max_frame to 0, and installs this as the new authoritative header — so the post-restart epoch is identified by a salt pair that differs from the pre-restart epoch."
+relation_to_parent = "decomposes"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "1722-1738"
+code_text_hash = "sha256:bcedcdabc80380a7adff3bb2bcb92d8515af384dfe83f14930d2af7e4f7e4e09"
+reason = "checkpoint_seq = snapshot.checkpoint_seq+1, salt_1 = snapshot.salt_1+1, salt_2 = io.generate_random_number(), max_frame = 0 are written into the `restarted` header that becomes the new snapshot."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "1753-1762"
+code_text_hash = "sha256:454d2a4d613a9c37c8462d0ceacd78b04e0f79e42ea5dd7ee35ea3a67f4d4271"
+reason = "The restarted header is installed into the authority (rollback_frames(0) then install_snapshot(restarted)) and returned as the WalSnapshot, making the new salts/checkpoint_seq authoritative."
+
+[[verified.proof.steps]]
+path = "0.1"
+claim = "After restart the WAL is marked uninitialized, so the new header carrying the rotated salts must be durably (re)issued before the next append; consequently any frame physically written into the reused log file after restart carries the new salts, not the previous epoch's salts."
+relation_to_parent = "decomposes"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "1743-1744"
+code_text_hash = "sha256:01f4bcac6280ce5ecd8d07c4174aedafd78908d3d323eeb446e322664a147939"
+reason = "Restart sets metadata.initialized to false and clears the frame cache, forcing header re-issue before the next append."
+
+[[verified.proof.steps.grounds]]
+kind = "intent"
+id = "wal_initialized_only_after_header_durable"
+at_text_hash = "sha256:29cfd50757584c85fc404e9c3d112aa47fe794bfaee0fc0f1ddff4059bfc24bf"
+relation = "composes"
+reason = "Because the WAL is only counted initialized once the new (rotated-salt) header is durably written and synced, the header re-issued after restart reflects the new salts on disk before any frame is appended."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/sqlite3_ondisk.rs"
+lines = "2068-2071"
+code_text_hash = "sha256:7e17efac611eda26d982d3609c6a094531183ad9954a0930e87959f415787ec0"
+reason = "prepare_wal_frame stamps each appended frame's salt_1/salt_2 from the current wal_header, so frames written post-restart carry the rotated salts rather than the prior epoch's."
+
+[[verified.proof.steps]]
+path = "0.2"
+claim = "Frame validity on the recovery/read path is decided by comparing the frame header's salts against the current header/snapshot salts; a frame whose salts do not match is rejected (recovery rebuilds, scan stops), so a leftover previous-epoch frame in the reused log cannot be accepted as valid."
+relation_to_parent = "decomposes"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "5286-5290"
+code_text_hash = "sha256:f5d25dc7109b1ebdf7bdce2d0fc4b76e710000e484dc9f1a249321bdbe8cb701"
+reason = "Authority-snapshot validation: if frame_header.salt_1/salt_2 differ from snapshot.salt_1/salt_2 it returns RebuildFromDisk(LastFrameSaltMismatch) rather than trusting the frame."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/sqlite3_ondisk.rs"
+lines = "1814-1824"
+code_text_hash = "sha256:302b158f6b47b3890c6d623ed117cddb29c0657564c434c3a5f5fb90585c344b"
+reason = "WAL scan stops at the first frame whose salts (s1,s2) differ from the header salts, so previous-epoch frames past the restart point are never read as part of the log."
+
+[[verified.proof.steps.grounds]]
+kind = "prior-step"
+path = "0.0"

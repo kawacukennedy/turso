@@ -1,0 +1,11 @@
+schema_version = 1
+id = "20260605T053650Z-KXCQN5"
+kind = "proof-review"
+subject = "WAL header durability + append-only log intents (1 counterexample, 1 verified)"
+started_at = "2026-06-05T05:36:50Z"
+started_by = "cli"
+nesting_policy = "disallow"
+state = "closed"
+items = []
+closed_at = "2026-06-05T05:38:59Z"
+exit_kind = "exit-defer-undecided"

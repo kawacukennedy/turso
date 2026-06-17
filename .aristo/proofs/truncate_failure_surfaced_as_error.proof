@@ -1,0 +1,66 @@
+[verdict]
+type = "verified"
+method = "neural"
+produced_at_text_hash = "sha256:ec1910d45dab26c962378a05fb3b082b98e9cc1da455b77c521ffebb2a21146b"
+produced_at_body_hash = "sha256:05185c3220c7a3336b932e56abace4aeb02d2e59791bd490705d036c41afd850"
+produced_by = "aristo-neural-verifier@v0.0.7"
+attempts = 2
+property_kind = "invariant"
+
+[verified.proof]
+conclusion = "During a TRUNCATE checkpoint, a failed WAL truncation or its post-truncation sync is surfaced to the caller as a checkpoint error, and the checkpoint never returns a successful 'emptied log' result on such a failure."
+
+[[verified.proof.steps]]
+path = "0"
+claim = "If either the WAL truncate or the post-truncation WAL sync fails, the failure becomes a LimboError that aborts the checkpoint before any success result is produced."
+relation_to_parent = "decomposes"
+subgoal_paths = [
+    "0.0",
+    "0.1",
+]
+
+[[verified.proof.steps.grounds]]
+kind = "composition"
+reason = "The conclusion holds if (0.0) a truncate/sync failure is captured as a completion error surfaced as Err, AND (0.1) that Err propagates out of the checkpoint state machine before the success-returning Finalize phase. The two subgoals combine via AND."
+
+[[verified.proof.steps]]
+path = "0.0"
+claim = "A failed truncate or sync I/O operation records a CompletionError on the completion, and awaiting that completion yields Err(LimboError::CompletionError(..)); the tracing::debug! callbacks only log and do not consume or mask the error."
+relation_to_parent = "decomposes"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "4905-4934"
+code_text_hash = "sha256:279d12b78266fb2e40abbd2d9d9faca7e6035afa8d48e89f712901f465f12c70"
+reason = "truncate_log issues file.truncate(0, c) and file.sync(..) and yields the completion via io_yield_one!; the callbacks merely tracing::debug! on Err and tracing::trace! on Ok, performing no error swallowing or success reporting."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/io/mod.rs"
+lines = "405-414"
+code_text_hash = "sha256:a916fb4eb52766650a22e5b0cc6635d17ea23980387d09bbf70e423f1919054a"
+reason = "wait_for_completion steps the I/O until the completion finishes, then reads inner.result and returns Err(err.into()) when a CompletionError is present, so a failed truncate/sync completion surfaces as a LimboError to whoever awaits the yielded completion."
+
+[[verified.proof.steps]]
+path = "0.1"
+claim = "The checkpoint driver invokes truncate_wal through return_if_io!, which re-raises any Err and returns it from checkpoint; the only success path (Finalize returning IOResult::Done(res)) is reached only after TruncateWalFile completes without error."
+relation_to_parent = "decomposes"
+
+[[verified.proof.steps.grounds]]
+kind = "prior-step"
+path = "0.0"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/pager.rs"
+lines = "4721-4729"
+code_text_hash = "sha256:76a1fd7e0f1f9ab6b64a169b047eebf3be7889f88044b7fdbb3a1d634d47f983"
+reason = "The TruncateWalFile phase calls wal.truncate_wal(..) wrapped in return_if_io!, so an Err from the yielded truncate/sync completion (per step 0.0) is returned immediately from the checkpoint function rather than advancing the phase."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/pager.rs"
+lines = "4730-4748"
+code_text_hash = "sha256:a8dac53adba7907da4018e697bc02b80cf4f926a090238c0b9557a709a18d19f"
+reason = "The Finalize phase is the sole path that returns Ok(IOResult::Done(res)) (the 'successfully emptied log' result); it is entered only after TruncateWalFile finishes without returning an error, so a truncate/sync failure can never reach it."

@@ -1,0 +1,17 @@
+for_canon_ids = [
+    "wal_truncate_atomic_under_concurrent_writers",
+    "wal_find_frame_range_invariant",
+    "wal_checkpoint_error_no_db_leak",
+]
+siblings = []
+discovered_at = "2026-06-17T06:40:27.614054288Z"
+
+[objective]
+canon_id = "wal_protocol_correctness"
+version = "v0.1.0"
+canonical_text = """
+the WAL subsystem maintains LSN monotonicity, frame commitment ordering, recovery idempotency, checkpoint safety, and group-commit atomicity
+"""
+scope = ":vanilla"
+prefix_tier = "kanon:"
+disposition = "open"

@@ -1,0 +1,151 @@
+[__meta__]
+schema_version = 1
+canon_version = "v0.1.0"
+last_fetched = "2026-06-17T06:41:20.116Z"
+
+[aret_8uppjasa]
+last_match_text_hash = "sha256:3d260cf86a59e54d02ee3224cc3951b4c17aa0488e8be1109cf70e0912eef1ae"
+canon_fetched_at = "2026-06-17T06:40:27.612558674Z"
+
+[aret_amx36p8u]
+last_match_text_hash = "sha256:0cad80808b6b3d74122a991d251c48f534b5db1c2cdd60e1139b8ad841d7d607"
+canon_fetched_at = "2026-06-17T06:41:20.199049872Z"
+
+[aret_c6zz94gk]
+last_match_text_hash = "sha256:a6a6aabf707adfe418c11bc5ea417c1364c926f72ee5f05bd27b8b6aac7b34f5"
+canon_fetched_at = "2026-06-17T06:40:27.612558674Z"
+
+[aret_sea6ue44]
+last_match_text_hash = "sha256:99cf0a4664b81492fcaf3eaace7c7ab17a51261a6c340c7cad8faae4be7d45cc"
+canon_fetched_at = "2026-06-17T06:40:27.612558674Z"
+
+["aristos:wal_checkpoint_error_no_db_leak"]
+last_match_text_hash = "sha256:99cf0a4664b81492fcaf3eaace7c7ab17a51261a6c340c7cad8faae4be7d45cc"
+canon_fetched_at = "2026-06-17T06:40:36Z"
+
+[["aristos:wal_checkpoint_error_no_db_leak".accepted_matches]]
+canon_id = "wal_checkpoint_error_no_db_leak"
+version = "v0.1.0"
+canonical_text = """
+A checkpoint failure must not leak frames into the main database file
+"""
+canon_version = "v0.1.0"
+confidence = 0.9999994440821638
+prefix_tier = "aristos:"
+backed_by = "golden model + proofs + differential testing"
+linked = "arta_5cc2507abbafa1dcca819c702e32c824"
+accepted_at = "2026-06-17T06:40:36Z"
+bound_at = "2026-06-17T06:40:36Z"
+
+["aristos:wal_commit_requires_fsync"]
+last_match_text_hash = "sha256:74c9ab83ffb8f941a7af5f5c9917f2d082bc6753ca8bb0f62de7dac42fe1f83f"
+canon_fetched_at = "2026-06-17T06:32:15Z"
+
+[["aristos:wal_commit_requires_fsync".accepted_matches]]
+canon_id = "wal_commit_requires_fsync"
+version = "v0.1.1"
+canonical_text = """
+A commit frame must reach stable storage via fsync before the transaction is reported as durable
+"""
+canon_version = "v0.1.0"
+confidence = 0.8577551543712616
+prefix_tier = "aristos:"
+backed_by = "golden model + proofs + differential testing"
+linked = "arta_00a2a3a86a149b935334d1fd1da16f66"
+accepted_at = "2026-06-17T06:32:15Z"
+bound_at = "2026-06-17T06:32:15Z"
+
+["aristos:wal_find_frame_range_invariant"]
+last_match_text_hash = "sha256:a6a6aabf707adfe418c11bc5ea417c1364c926f72ee5f05bd27b8b6aac7b34f5"
+canon_fetched_at = "2026-06-17T06:40:36Z"
+
+[["aristos:wal_find_frame_range_invariant".accepted_matches]]
+canon_id = "wal_find_frame_range_invariant"
+version = "v0.1.0"
+canonical_text = """
+find_frame never reads outside the live frame range [nbackfills, max_frame]
+"""
+canon_version = "v0.1.0"
+confidence = 1.0
+prefix_tier = "aristos:"
+backed_by = "golden model + proofs + differential testing"
+linked = "arta_961fe492d27d1abdb6f6af1e6a38ac79"
+accepted_at = "2026-06-17T06:40:36Z"
+bound_at = "2026-06-17T06:40:36Z"
+
+["aristos:wal_nbackfills_orders_with_recovery"]
+last_match_text_hash = "sha256:41ecf517973ba246f2906d32769b4fc1dbe366b30a71431402629bff6306d4dd"
+canon_fetched_at = "2026-06-17T06:32:13Z"
+
+[["aristos:wal_nbackfills_orders_with_recovery".accepted_matches]]
+canon_id = "wal_nbackfills_orders_with_recovery"
+version = "v0.1.1"
+canonical_text = """
+The nbackfills counter advances after frames are durable, so recovery never replays already-checkpointed frames
+"""
+canon_version = "v0.1.0"
+confidence = 0.8643963783979416
+prefix_tier = "aristos:"
+backed_by = "golden model + proofs + differential testing"
+linked = "arta_a5faa6c9e85d69c3e9fe4a2180e1dc47"
+accepted_at = "2026-06-17T06:32:13Z"
+bound_at = "2026-06-17T06:32:13Z"
+
+["aristos:wal_truncate_atomic_under_concurrent_writers"]
+last_match_text_hash = "sha256:3d260cf86a59e54d02ee3224cc3951b4c17aa0488e8be1109cf70e0912eef1ae"
+canon_fetched_at = "2026-06-17T06:40:36Z"
+
+[["aristos:wal_truncate_atomic_under_concurrent_writers".accepted_matches]]
+canon_id = "wal_truncate_atomic_under_concurrent_writers"
+version = "v0.1.0"
+canonical_text = """
+WAL truncate is atomic: no committed frame can be observed lost across the truncate operation
+"""
+canon_version = "v0.1.0"
+confidence = 1.0
+prefix_tier = "aristos:"
+backed_by = "golden model + proofs + differential testing"
+linked = "arta_013316bc46e9af51cf52612fe2533e90"
+accepted_at = "2026-06-17T06:40:36Z"
+bound_at = "2026-06-17T06:40:36Z"
+
+[backfill_watermark_advances_only_after_durable]
+last_match_text_hash = "sha256:41ecf517973ba246f2906d32769b4fc1dbe366b30a71431402629bff6306d4dd"
+canon_fetched_at = "2026-06-17T06:30:44.423541879Z"
+
+[committed_frames_visible_only_after_durable]
+last_match_text_hash = "sha256:74c9ab83ffb8f941a7af5f5c9917f2d082bc6753ca8bb0f62de7dac42fe1f83f"
+canon_fetched_at = "2026-06-17T06:30:44.423541879Z"
+
+["kanon:wal_protocol_correctness"]
+last_match_text_hash = "sha256:0cad80808b6b3d74122a991d251c48f534b5db1c2cdd60e1139b8ad841d7d607"
+canon_fetched_at = "2026-06-17T06:41:26Z"
+
+[["kanon:wal_protocol_correctness".accepted_matches]]
+canon_id = "wal_protocol_correctness"
+version = "v0.1.0"
+canonical_text = """
+the WAL subsystem maintains LSN monotonicity, frame commitment ordering, recovery idempotency, checkpoint safety, and group-commit atomicity
+"""
+canon_version = "v0.1.0"
+confidence = 1.0000000000000002
+prefix_tier = "kanon:"
+linked = "arta_d2d475b193d105afc100a09b3962fedc"
+accepted_at = "2026-06-17T06:41:26Z"
+bound_at = "2026-06-17T06:41:26Z"
+
+[log_restart_rotates_salts]
+last_match_text_hash = "sha256:c52bf25b41ba56279e7c1c7066ae6318ff82a99c1af858ec82c269dec6882d12"
+canon_fetched_at = "2026-06-17T06:40:44.304021619Z"
+
+[truncate_failure_surfaced_as_error]
+last_match_text_hash = "sha256:ec1910d45dab26c962378a05fb3b082b98e9cc1da455b77c521ffebb2a21146b"
+canon_fetched_at = "2026-06-17T06:40:44.304021619Z"
+
+[wal_initialized_only_after_header_durable]
+last_match_text_hash = "sha256:29cfd50757584c85fc404e9c3d112aa47fe794bfaee0fc0f1ddff4059bfc24bf"
+canon_fetched_at = "2026-06-17T06:40:44.304021619Z"
+
+[wal_records_changes_before_apply]
+last_match_text_hash = "sha256:85270d4acbf9d93ad70d71d3c5a3a4863616dba36abb529bd7d12244e615e79e"
+canon_fetched_at = "2026-06-17T06:40:44.304021619Z"

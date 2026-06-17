@@ -1,0 +1,57 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "aristo nudge --event post-tool-use 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "aristo install-skills --hook-format 2>/dev/null || true",
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "aristo nudge --event session-start 2>/dev/null || true",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "aristo session active --hook-format 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ".*"
+      },
+      {
+        "hooks": [
+          {
+            "command": "aristo nudge --event user-prompt-submit 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ]
+  },
+  "statusLine": {
+    "command": "aristo statusline 2>/dev/null || true",
+    "type": "command"
+  }
+}

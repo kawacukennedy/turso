@@ -1,0 +1,101 @@
+[verdict]
+type = "verified"
+method = "neural"
+produced_at_text_hash = "sha256:41ecf517973ba246f2906d32769b4fc1dbe366b30a71431402629bff6306d4dd"
+produced_at_body_hash = "sha256:f85e009b6961916b91528b745d43e4173eb76499e296dd2315daf0290ce76209"
+produced_by = "aristo-neural-verifier@v0.0.7"
+attempts = 3
+property_kind = "invariant"
+
+[verified.proof]
+conclusion = "The published backfill watermark (nbackfills) is advanced only after the database-file pages it covers have been durably written and synced, so a crash cannot leave the WAL treating frames as applied to the database before the database actually holds them."
+
+[[verified.proof.steps]]
+path = "0"
+claim = "publish_backfill advances the published backfill watermark only after the db-file pages covered by max_frame are durably synced."
+relation_to_parent = "decomposes"
+subgoal_paths = [
+    "0.0",
+    "0.1",
+]
+
+[[verified.proof.steps.grounds]]
+kind = "composition"
+reason = "The conclusion holds because (0.0) publish_backfill is the only mutator of the watermark and merely stores max_frame, and (0.1) the sole caller reaches it only after the db-file sync of the backfilled pages has completed. AND-composition of these two subgoals yields the invariant."
+
+[[verified.proof.steps]]
+path = "0.0"
+claim = "publish_backfill performs no durability work itself; it delegates to coordination.publish_backfill, which simply stores max_frame into the nbackfills watermark with Release ordering. Thus the durability guarantee must be established by the call site, not within this function."
+relation_to_parent = "decomposes"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "3792-3794"
+code_text_hash = "sha256:336c6609dc640da2bb2a84da7133ef79624c53f6acc9305755dbc6af928c110a"
+reason = "WalFile::publish_backfill (the focal intent site) is a thin delegation: it calls self.coordination.publish_backfill(max_frame) and does nothing else."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "888-894"
+code_text_hash = "sha256:432bdd0f2dd58b18f32c76e70ef52827598da33c404e044379e42cc6997a8913"
+reason = "The coordination implementation stores max_frame into metadata.nbackfills (the published watermark) via an atomic Release store; it neither writes db pages nor issues syncs, confirming durability must be guaranteed before this is called."
+
+[[verified.proof.steps]]
+path = "0.1"
+claim = "wal.publish_backfill(max_frame) is invoked only from CheckpointPhase::PublishBackfill, which the checkpoint state machine reaches only after the SyncDbFile phase's db-file sync completion has finished (and, for backends needing a proof, after install_durable_backfill_proof's sync completion)."
+relation_to_parent = "decomposes"
+subgoal_paths = [
+    "0.1.0",
+    "0.1.1",
+]
+
+[[verified.proof.steps.grounds]]
+kind = "composition"
+reason = "Combines (0.1.0) that PublishBackfill is the unique call site and (0.1.1) that the preceding SyncDbFile phase blocks on the db-file sync completion via io_yield_one! before the state machine can advance to PublishBackfill."
+
+[[verified.proof.steps]]
+path = "0.1.0"
+claim = "The only call to wal.publish_backfill in the checkpoint pipeline is in CheckpointPhase::PublishBackfill, reached from ReadDbIdentity/SyncBackfillProof after the backfilled pages have been synced; the no-sync paths (wal_checkpoint_backfilled == 0 or SyncMode::Off) skip publish entirely by jumping to Finalize."
+relation_to_parent = "restricts"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/pager.rs"
+lines = "4685-4699"
+code_text_hash = "sha256:e2e474263e1e6dd7890617d7b7bb1dc6e6508ee92095b1a21ab8b71f31d8f748"
+reason = "CheckpointPhase::PublishBackfill calls wal.publish_backfill(max_frame); this is the sole call site reached by the state machine, and it is entered from ReadDbIdentity/SyncBackfillProof which follow SyncDbFile."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/pager.rs"
+lines = "4500-4506"
+code_text_hash = "sha256:af137d31fb1a99134b8c33f6f0a2214ca05768da907fffe2b8cf63a59d6dd124"
+reason = "When no frames were backfilled (wal_checkpoint_backfilled == 0) or sync is Off, the Checkpoint phase transitions straight to Finalize, bypassing SyncDbFile and PublishBackfill entirely, so the watermark is not advanced for unsynced state."
+
+[[verified.proof.steps]]
+path = "0.1.1"
+claim = "Before reaching PublishBackfill, the SyncDbFile phase issues begin_sync on the db file and yields via io_yield_one!, so the checkpoint state machine resumes at the next phase only after that sync completion has finished; ReadDbIdentity then re-reads the synced header and, for backends with a proof, install_durable_backfill_proof returns a completion that is likewise awaited before PublishBackfill."
+relation_to_parent = "composes"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/pager.rs"
+lines = "4611-4622"
+code_text_hash = "sha256:a293553d30c5406b2565f4cc1ab7d264adf28e6ba9472f08aae18d7ebb48e054"
+reason = "CheckpointPhase::SyncDbFile issues begin_sync(db_file, ...) and io_yield_one!(c); the db_sync_sent flag plus the syncing assertion ensure the db-file sync is issued and the phase yields until it completes."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/util.rs"
+lines = "23-27"
+code_text_hash = "sha256:898ca7a8ac6a2ce2cdb5433a2d7e2ca4e447bccdad2211034189cc72f900a8e9"
+reason = "io_yield_one! returns IOResult::IO(Single(c)), handing control to the I/O driver; the state machine only re-enters (advancing toward PublishBackfill) after completion c finishes, establishing the happens-before from db-file sync to publish."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/pager.rs"
+lines = "4657-4668"
+code_text_hash = "sha256:3ad913602423eb525202e49556e57db4a9d770a84f0941f21aa198f63d25c6d9"
+reason = "install_durable_backfill_proof, when it returns Some(completion), transitions to SyncBackfillProof and yields on that completion before PublishBackfill, so any backend-specific durable proof is also synced before the watermark advances."

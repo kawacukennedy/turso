@@ -1,0 +1,33 @@
+edits_since_annotation = 5
+window_intent_ids = [
+    "backfill_watermark_advances_only_after_durable",
+    "committed_frames_visible_only_after_durable",
+    "log_restart_rotates_salts",
+    "truncate_failure_surfaced_as_error",
+    "wal_initialized_only_after_header_durable",
+    "wal_records_changes_before_apply",
+]
+
+[baseline]
+score = 0.15000000000000002
+tier = "Apprentice"
+
+[reviewed]
+
+[proof_reviewed]
+
+[throttle.authoring_debt]
+last_fired_epoch = 1781678473
+last_surfaced_metric = 5.0
+
+[throttle.proof_review_backlog]
+last_fired_epoch = 1781677822
+last_surfaced_metric = 6.0
+
+[throttle.review_backlog]
+last_fired_epoch = 1781677822
+last_surfaced_metric = 6.0
+
+[throttle.verify_backlog]
+last_fired_epoch = 1781677822
+last_surfaced_metric = 1.0

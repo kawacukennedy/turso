@@ -1,0 +1,49 @@
+schema_version = 1
+id = "20260617T063056Z-GSM2XG"
+kind = "intent-review"
+subject = "WAL durability canon matches + suggestions"
+started_at = "2026-06-17T06:30:56Z"
+started_by = "cli"
+nesting_policy = "disallow"
+state = "closed"
+closed_at = "2026-06-17T06:40:18Z"
+exit_kind = "exit"
+
+[[items]]
+ref = "match:backfill_watermark_advances_only_after_durable#wal_nbackfills_orders_with_recovery"
+status = "accepted"
+closed_at = "2026-06-17T06:32:13Z"
+
+[[items]]
+ref = "match:committed_frames_visible_only_after_durable#wal_commit_requires_fsync"
+status = "accepted"
+closed_at = "2026-06-17T06:32:15Z"
+
+[[items]]
+ref = "cluster:wal_protocol_correctness"
+status = "accepted"
+closed_at = "2026-06-17T06:33:03Z"
+
+[[items]]
+ref = "sibling:wal_protocol_correctness#wal_initialized_reflects_sync_outcome"
+status = "rejected"
+note = "already asserted by wal_initialized_only_after_header_durable (mark_initialized)"
+closed_at = "2026-06-17T06:34:59Z"
+
+[[items]]
+ref = "sibling:wal_protocol_correctness#wal_find_frame_range_invariant"
+status = "accepted"
+note = "adopted"
+closed_at = "2026-06-17T06:40:11Z"
+
+[[items]]
+ref = "sibling:wal_protocol_correctness#wal_checkpoint_error_no_db_leak"
+status = "accepted"
+note = "adopted"
+closed_at = "2026-06-17T06:40:11Z"
+
+[[items]]
+ref = "sibling:wal_protocol_correctness#wal_truncate_atomic_under_concurrent_writers"
+status = "accepted"
+note = "adopted"
+closed_at = "2026-06-17T06:40:11Z"

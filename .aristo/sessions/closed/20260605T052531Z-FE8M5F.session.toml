@@ -1,0 +1,15 @@
+schema_version = 1
+id = "20260605T052531Z-FE8M5F"
+kind = "proof-review"
+subject = "WAL append-only log records changes before apply (1 verified intent)"
+started_at = "2026-06-05T05:25:31Z"
+started_by = "cli"
+nesting_policy = "disallow"
+state = "closed"
+closed_at = "2026-06-05T05:26:18Z"
+exit_kind = "exit"
+
+[[items]]
+ref = "wal_records_changes_before_apply#verdict"
+status = "accepted"
+closed_at = "2026-06-05T05:26:12Z"

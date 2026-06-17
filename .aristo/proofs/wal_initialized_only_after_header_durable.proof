@@ -1,0 +1,62 @@
+[verdict]
+type = "verified"
+method = "neural"
+produced_at_text_hash = "sha256:29cfd50757584c85fc404e9c3d112aa47fe794bfaee0fc0f1ddff4059bfc24bf"
+produced_at_body_hash = "sha256:074f1f17f8ba26ffd1109158b3d49d5ad5ded5187c1ba8f678bd80544b495885"
+produced_by = "aristo-neural-verifier@v0.0.7"
+attempts = 3
+property_kind = "invariant"
+
+[verified.proof]
+conclusion = "The WAL is marked initialized only when its header sync succeeds; a failed header write or sync leaves the WAL uninitialized, and prepare_wal_start re-issues the header before the next append whenever the WAL is not initialized, so the initialized flag never claims durability the on-disk header has not reached."
+
+[[verified.proof.steps]]
+path = "0"
+claim = "The WAL counts as initialized only after a successful header sync, and a failed write/sync leaves it uninitialized so the header is re-issued before the next append."
+relation_to_parent = "decomposes"
+subgoal_paths = [
+    "0.0",
+    "0.1",
+]
+
+[[verified.proof.steps.grounds]]
+kind = "composition"
+reason = "Conjunction of the success-gated marking (0.0) and the re-issuance-on-uninitialized behavior (0.1)."
+
+[[verified.proof.steps]]
+path = "0.0"
+claim = "mark_initialized is invoked from prepare_wal_finish's header sync completion only when the sync result is Ok; on a failed sync it is not called, so the initialized flag is not set."
+relation_to_parent = "decomposes"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "4054-4066"
+code_text_hash = "sha256:4d91d9319fcabe79a48dbd975be854488f754682c8af074e6afd6526cbd7e77b"
+reason = "prepare_wal_finish syncs the WAL file and its completion callback calls coordination.mark_initialized() only inside `if res.is_ok()`, so a failed sync skips marking initialized."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "1251-1257"
+code_text_hash = "sha256:9b8234f5f08abf3fe78f20f703bcc7b67d0e046954a2c138a16a29a437940c52"
+reason = "mark_initialized is the only writer that stores true into metadata.initialized; since it is the sole setter, not calling it on sync failure leaves initialized false."
+
+[[verified.proof.steps]]
+path = "0.1"
+claim = "When the WAL is not initialized, prepare_wal_start re-issues the WAL header (writing it and seeding state) before the next append; when already initialized it returns early without re-issuing."
+relation_to_parent = "decomposes"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "4004-4019"
+code_text_hash = "sha256:8c93bb9aee1e2736c4dc19a240c5204683386841cd92c8da0e8695d9ae294318"
+reason = "prepare_wal_start returns Ok(None) early if wal_is_initialized(); otherwise it prepares the header, seeds last_checksum/max_frame, and calls begin_write_wal_header, re-issuing the header before appends."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "4095-4098"
+code_text_hash = "sha256:ceaca929ecc33fdcb58b5078a3fcc0fd23fc5f732511d859cd5a8031d68b3c5f"
+reason = "prepare_frames (the append path) asserts wal_is_initialized(), so an append cannot proceed until the header has been re-issued and durably marked initialized."

@@ -1,0 +1,76 @@
+[verdict]
+type = "verified"
+method = "neural"
+produced_at_text_hash = "sha256:74c9ab83ffb8f941a7af5f5c9917f2d082bc6753ca8bb0f62de7dac42fe1f83f"
+produced_at_body_hash = "sha256:3bfdda02e38c710c89ec74ae8c18d240fd73133d61839848f0fb63fd71979bc7"
+produced_by = "aristo-neural-verifier@v0.0.7"
+attempts = 3
+property_kind = "invariant"
+
+[verified.proof]
+conclusion = "Appended WAL frames are exposed to readers (via the published commit watermark max_frame) only after their writes have completed and, on the durable commit path, their fsync has succeeded, so a reader never observes a frame whose data a crash could still lose."
+
+[[verified.proof.steps]]
+path = "0"
+claim = "finish_append_frames_commit makes the new frames visible to readers, and it is reached only after the frame writes are confirmed durable, so the visibility-after-durability ordering holds."
+relation_to_parent = "decomposes"
+subgoal_paths = [
+    "0.0",
+    "0.1",
+]
+
+[[verified.proof.steps.grounds]]
+kind = "intent"
+id = "committed_frames_visible_only_after_durable"
+at_text_hash = "sha256:74c9ab83ffb8f941a7af5f5c9917f2d082bc6753ca8bb0f62de7dac42fe1f83f"
+relation = "instantiates"
+reason = "This is the focal intent being discharged for finish_append_frames_commit."
+
+[[verified.proof.steps.grounds]]
+kind = "composition"
+reason = "The conclusion follows by AND of subgoals 0.0 (publish == visibility) and 0.1 (publish reached only after durability)."
+
+[[verified.proof.steps]]
+path = "0.0"
+claim = "finish_append_frames_commit makes frames visible to readers by publishing the commit watermark: it loads max_frame and calls coordination.publish_commit, which stores max_frame into shared metadata with Release ordering -- the very watermark readers use to bound which frames they may read."
+relation_to_parent = "decomposes"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "3960-3971"
+code_text_hash = "sha256:ae21d656701315b486088cdaac1cd466badd35e08b701e7a106764c7de9cfab0"
+reason = "finish_append_frames_commit reads max_frame/last_checksum and calls coordination.publish_commit with the WalCommitState, then clears has_unpublished_frames."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/wal.rs"
+lines = "1814-1825"
+code_text_hash = "sha256:fd438ff162efe9a69750761844d2de405870165f9e9cb355c907b449e4e4c4f3"
+reason = "publish_commit stores commit.max_frame into shared.metadata.max_frame with Ordering::Release, which is the visibility watermark for readers."
+
+[[verified.proof.steps]]
+path = "0.1"
+claim = "finish_append_frames_commit is invoked only from the CommitState::WalCommitDone state, which is reached only after all WAL frame writes have completed without error and, when sync_mode is Full, after the wal.sync fsync completion has succeeded."
+relation_to_parent = "decomposes"
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/pager.rs"
+lines = "4217-4222"
+code_text_hash = "sha256:c53118762510615eb1ea34b7b888ef2f02fbdee3e72fb55eb6352581940d668d"
+reason = 'finish_append_frames_commit is called only in CommitState::WalCommitDone, commented "all I/O complete, NOW it is safe to advance WAL state".'
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/pager.rs"
+lines = "4142-4182"
+code_text_hash = "sha256:60c87fade39758718208575da04659a26cbcd73b15f6f9fead3023b956eac855"
+reason = "WaitWrites waits for every write completion and aborts on any write error; only then, in Full sync mode, wal.sync is submitted and the state advances to WaitSync (otherwise straight to WalCommitDone)."
+
+[[verified.proof.steps.grounds]]
+kind = "code"
+file = "core/storage/pager.rs"
+lines = "4191-4216"
+code_text_hash = "sha256:fdcd7aff5aa5cb6d13e219cfeac2ca4189d2318ccb6de5af8bdf669ea543831e"
+reason = "WaitSync waits for the fsync completion and only advances to WalCommitDone after sync_c.succeeded(); a failed fsync panics (data_sync_retry=off) or returns an error, never reaching the publish."

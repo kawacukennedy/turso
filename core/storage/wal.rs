@@ -578,7 +578,7 @@ trait WalCoordination: Debug + Send + Sync {
          header is re-issued before the next append, so the initialized \
          state never reports durability the on-disk header has not \
          actually reached.",
-        verify = "neural",
+        verify = "full",
         id = "wal_initialized_only_after_header_durable"
     )]
     fn mark_initialized(&self);
@@ -605,11 +605,12 @@ trait WalCoordination: Debug + Send + Sync {
 }
 
 /// Write-ahead log (WAL).
+#[aristo::intent("the WAL subsystem maintains LSN monotonicity, frame commitment ordering, recovery idempotency, checkpoint safety, and group-commit atomicity\n", id = "kanon:wal_protocol_correctness")]
 #[aristo::intent(
     "An append-only log that records page-level changes before they are \
      applied to the database, so a system crash can be recovered by \
      replaying the log.",
-    verify = "neural",
+    verify = "full",
     id = "wal_records_changes_before_apply"
 )]
 pub trait Wal: Debug + Send + Sync {
@@ -1711,7 +1712,7 @@ impl ShmWalCoordination {
         "Restarting the log changes the WAL salts and increments the \
          checkpoint sequence, so frames written under a previous epoch \
          cannot be mistaken as valid once the log file is reused.",
-        verify = "neural",
+        verify = "full",
         id = "log_restart_rotates_salts"
     )]
     fn restart_snapshot_from_authority(
@@ -3272,6 +3273,7 @@ impl Wal for WalFile {
 
     /// Find the latest frame containing a page.
     #[instrument(skip_all, level = Level::DEBUG)]
+    #[aristo::intent("find_frame never reads outside the live frame range [nbackfills, max_frame]\n", id = "aristos:wal_find_frame_range_invariant", parent = "aristos:wal_protocol_correctness")]
     fn find_frame(&self, page_id: u64, frame_watermark: Option<u64>) -> Result<Option<u64>> {
         #[cfg(not(feature = "conn_raw_api"))]
         turso_assert!(
@@ -3734,6 +3736,7 @@ impl Wal for WalFile {
     }
 
     #[instrument(skip_all, level = Level::DEBUG)]
+    #[aristo::intent("A checkpoint failure must not leak frames into the main database file\n", id = "aristos:wal_checkpoint_error_no_db_leak", parent = "aristos:wal_protocol_correctness")]
     fn checkpoint(
         &self,
         pager: &Pager,
@@ -3780,15 +3783,7 @@ impl Wal for WalFile {
         )
     }
 
-    #[aristo::intent(
-        "The published backfill watermark advances only after the \
-         database-file pages it covers have been durably written and \
-         synced, so a crash can never leave the log treating frames as \
-         applied to the database when the database does not yet hold \
-         them.",
-        verify = "neural",
-        id = "backfill_watermark_advances_only_after_durable"
-    )]
+    #[aristo::intent("The nbackfills counter advances after frames are durable, so recovery never replays already-checkpointed frames\n", id = "aristos:wal_nbackfills_orders_with_recovery", verify = "full")]
     fn publish_backfill(&self, max_frame: u64) {
         self.coordination.publish_backfill(max_frame);
     }
@@ -3950,13 +3945,7 @@ impl Wal for WalFile {
     }
 
     #[instrument(skip_all, level = Level::DEBUG)]
-    #[aristo::intent(
-        "Appended frames become visible to readers only after they have \
-         been durably written and synced, so a reader never observes a \
-         frame whose data a crash could still lose.",
-        verify = "neural",
-        id = "committed_frames_visible_only_after_durable"
-    )]
+    #[aristo::intent("A commit frame must reach stable storage via fsync before the transaction is reported as durable\n", id = "aristos:wal_commit_requires_fsync", verify = "full")]
     fn finish_append_frames_commit(&self) -> Result<()> {
         let max_frame = self.max_frame.load(Ordering::Acquire);
         let last_checksum = *self.last_checksum.read();
@@ -4888,11 +4877,12 @@ impl WalFile {
     }
 
     /// Truncate WAL file to zero and sync it. Called by pager AFTER DB file is synced.
+    #[aristo::intent("WAL truncate is atomic: no committed frame can be observed lost across the truncate operation\n", id = "aristos:wal_truncate_atomic_under_concurrent_writers", parent = "aristos:wal_protocol_correctness")]
     #[aristo::intent(
         "A failed WAL truncation, or its post-truncation sync, during a \
          TRUNCATE checkpoint is surfaced as a checkpoint error and is \
          never reported to the caller as a successfully emptied log.",
-        verify = "neural",
+        verify = "full",
         id = "truncate_failure_surfaced_as_error"
     )]
     fn truncate_log(
