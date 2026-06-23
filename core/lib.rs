@@ -901,13 +901,21 @@ impl Database {
         }
 
         let probe_flags = (flags | OpenFlags::Create) & !OpenFlags::NoLock & !OpenFlags::ReadOnly;
-        match io.open_file(path, probe_flags, true) {
-            Ok(_probe_file) => Ok(()),
-            Err(LimboError::LockingError(_)) => Err(LimboError::LockingError(format!(
-                "Failed opening database '{path}'. Database is already open without experimental multiprocess WAL in another process"
-            ))),
-            Err(err) => Err(err),
+        for attempt in 0..100 {
+            match io.open_file(path, probe_flags, true) {
+                Ok(_probe_file) => return Ok(()),
+                Err(LimboError::LockingError(_)) if attempt < 99 => {
+                    std::thread::sleep(std::time::Duration::from_millis(2));
+                }
+                Err(LimboError::LockingError(_)) => {
+                    return Err(LimboError::LockingError(format!(
+                        "Failed opening database '{path}'. Database is already open without experimental multiprocess WAL in another process"
+                    )));
+                }
+                Err(err) => return Err(err),
+            }
         }
+        unreachable!("multiprocess legacy-lock probe loop must return")
     }
 
     #[cfg(feature = "fs")]

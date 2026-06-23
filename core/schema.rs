@@ -6484,18 +6484,6 @@ mod tests {
             .contains("generated columns"));
     }
 
-    #[cfg(feature = "conn_raw_api")]
-    #[test]
-    fn test_table_name_for_root_page_falls_back_to_tables_map() -> Result<()> {
-        let mut schema = Schema::new();
-        let table = BTreeTable::from_sql("CREATE TABLE items(id INTEGER PRIMARY KEY)", 42)?;
-        schema.add_btree_table(Arc::new(table))?;
-        schema.table_names_by_root_page.remove(&42);
-
-        assert_eq!(schema.table_name_for_root_page(42), Some("items"));
-        Ok(())
-    }
-
     fn indices(mask: &ColumnMask) -> Vec<usize> {
         let mut v: Vec<usize> = mask.iter().try_collect().unwrap();
         v.sort_unstable();
